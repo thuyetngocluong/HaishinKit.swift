@@ -24,7 +24,7 @@ Pod::Spec.new do |s|
   s.tvos.deployment_target = "12.0"
   s.tvos.source_files = "Platforms/iOS/*.{h,swift}"
 
-  s.source_files = "Sources/**/*.swift"
+  s.source_files = "Sources/**/*.{swift, .xcconfig}"
   s.dependency 'Logboard', '~> 2.4.1'
 #  s.dependency 'GCDWebServer'
 
