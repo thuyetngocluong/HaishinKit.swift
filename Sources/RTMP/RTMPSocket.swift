@@ -17,7 +17,7 @@ final class RTMPSocket: NetSocket, RTMPSocketCompatible {
 
     override var totalBytesIn: Atomic<Int64> {
         didSet {
-            delegate?.socket(self, totalBytesIn: totalBytesIn.value)
+            delegate?.socket(self, totalBytesIn: totalBytesIn.wrappedValue)
         }
     }
 

@@ -8,7 +8,7 @@ final class IOAudioMonitor {
         didSet {
             if var inSourceFormat {
                 ringBuffer = .init(&inSourceFormat)
-                if isRunning.value {
+                if isRunning.wrappedValue {
                     audioUnit = makeAudioUnit()
                 }
             } else {
@@ -41,7 +41,7 @@ final class IOAudioMonitor {
     }
 
     func appendAudioPCMBuffer(_ audioPCMBuffer: AVAudioPCMBuffer) {
-        guard isRunning.value else {
+        guard isRunning.wrappedValue else {
             return
         }
         ringBuffer?.appendAudioPCMBuffer(audioPCMBuffer)
@@ -97,18 +97,18 @@ final class IOAudioMonitor {
 extension IOAudioMonitor: Running {
     // MARK: Running
     func startRunning() {
-        guard !isRunning.value else {
+        guard !isRunning.wrappedValue else {
             return
         }
         audioUnit = makeAudioUnit()
-        isRunning.mutate { $0 = true }
+        isRunning.wrappedValue = true
     }
 
     func stopRunning() {
-        guard isRunning.value else {
+        guard isRunning.wrappedValue else {
             return
         }
         audioUnit = nil
-        isRunning.mutate { $0 = false }
+        isRunning.wrappedValue = false
     }
 }

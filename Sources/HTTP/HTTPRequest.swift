@@ -76,7 +76,7 @@ public struct HTTPRequest: HTTPRequestCompatible {
     public var body: Data?
 
     /// Creates a new request with body of data.
-    init?(data: Data) {
+    public init?(data: Data) {
         self.data = data
     }
 }

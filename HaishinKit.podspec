@@ -26,5 +26,6 @@ Pod::Spec.new do |s|
 
   s.source_files = "Sources/**/*.swift"
   s.dependency 'Logboard', '~> 2.4.1'
+#  s.dependency 'GCDWebServer'
 
 end

@@ -95,7 +95,7 @@ public final class VideoCodec {
     private var presentationTimeStamp: CMTime = .invalid
 
     func appendImageBuffer(_ imageBuffer: CVImageBuffer, presentationTimeStamp: CMTime, duration: CMTime) {
-        guard isRunning.value, !willDropFrame(presentationTimeStamp) else {
+        guard !willDropFrame(presentationTimeStamp) else {
             return
         }
         if invalidateSession {
@@ -117,15 +117,15 @@ public final class VideoCodec {
     }
 
     func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard isRunning.value else {
+        guard isRunning.wrappedValue else {
             return
         }
         if invalidateSession {
             session = VTSessionMode.decompression.makeSession(self)
-            needsSync.mutate { $0 = true }
+            needsSync.wrappedValue = true
         }
         if !sampleBuffer.isNotSync {
-            needsSync.mutate { $0 = false }
+            needsSync.wrappedValue = false
         }
         _ = session?.decodeFrame(sampleBuffer) { [unowned self] status, _, imageBuffer, presentationTimeStamp, duration in
             guard let imageBuffer, status == noErr else {
@@ -201,7 +201,7 @@ extension VideoCodec: Running {
     // MARK: Running
     public func startRunning() {
         lockQueue.async {
-            self.isRunning.mutate { $0 = true }
+            self.isRunning.wrappedValue = true
             #if os(iOS) || os(tvOS) || os(visionOS)
             NotificationCenter.default.addObserver(
                 self,
@@ -223,14 +223,14 @@ extension VideoCodec: Running {
         lockQueue.async {
             self.session = nil
             self.invalidateSession = true
-            self.needsSync.mutate { $0 = true }
+            self.needsSync.wrappedValue = true
             self.outputFormat = nil
             self.presentationTimeStamp = .invalid
             #if os(iOS) || os(tvOS) || os(visionOS)
             NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: nil)
             NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
             #endif
-            self.isRunning.mutate { $0 = false }
+            self.isRunning.wrappedValue = false
         }
     }
 }

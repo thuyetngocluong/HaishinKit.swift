@@ -52,21 +52,23 @@ open class HTTPStream: NetStream {
     #endif
 
     func getResource(_ resourceName: String) -> (MIME, String)? {
-        let url = URL(fileURLWithPath: resourceName)
-        guard let name: String = name, 2 <= url.pathComponents.count && url.pathComponents[1] == name else {
-            return nil
-        }
-        let fileName: String = url.pathComponents.last!
-        switch true {
-        case fileName == "playlist.m3u8":
-            return (.applicationXMpegURL, tsWriter.playlist)
-        case fileName.contains(".ts"):
-            if let mediaFile: String = tsWriter.getFilePath(fileName) {
-                return (.videoMP2T, mediaFile)
-            }
-            return nil
-        default:
-            return nil
-        }
+        nil
+//        let url = URL(fileURLWithPath: resourceName)
+////        guard let name: String = name, 2 <= url.pathComponents.count && url.pathComponents[1] == name else {
+////            return nil
+////        }
+//        let fileName: String = url.pathComponents.last!
+//        print("GET", fileName)
+//        switch true {
+//        case fileName == "playlist.m3u8":
+//            return (.applicationXMpegURL, tsWriter.playlist)
+//        case fileName.contains(".ts"):
+//            if let mediaFile: String = tsWriter.getFilePath(fileName) {
+//                return (.videoMP2T, mediaFile)
+//            }
+//            return nil
+//        default:
+//            return nil
+//        }
     }
 }

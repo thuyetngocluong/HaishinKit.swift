@@ -109,7 +109,7 @@ public struct VideoCodecSettings: Codable {
 
     /// Creates a new VideoCodecSettings instance.
     public init(
-        videoSize: CGSize = .init(width: 854, height: 480),
+        videoSize: CGSize = .init(width: 720, height: 1280),
         bitRate: Int = 640 * 1000,
         frameInterval: Double = 0.0,
         profileLevel: String = kVTProfileLevel_H264_Baseline_3_1 as String,

@@ -339,9 +339,9 @@ extension IOVideoUnit: IOVideoMixerDelegate {
             presentationTimeStamp: presentationTimeStamp,
             duration: .invalid
         )
-        mixer?.recorder.appendPixelBuffer(
-            imageBuffer,
-            withPresentationTime: presentationTimeStamp
-        )
+//        mixer?.recorder.appendPixelBuffer(
+//            imageBuffer,
+//            withPresentationTime: presentationTimeStamp
+//        )
     }
 }

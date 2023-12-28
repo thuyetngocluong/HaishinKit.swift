@@ -63,7 +63,7 @@ public class AudioCodec {
 
     /// Append a CMSampleBuffer.
     public func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer) {
-        guard isRunning.value else {
+        guard isRunning.wrappedValue else {
             return
         }
         switch settings.format {
@@ -92,7 +92,7 @@ public class AudioCodec {
     }
 
     func appendAudioBuffer(_ audioBuffer: AVAudioBuffer, presentationTimeStamp: CMTime) {
-        guard let audioConverter, isRunning.value else {
+        guard let audioConverter, isRunning.wrappedValue else {
             return
         }
         var error: NSError?
@@ -186,23 +186,23 @@ extension AudioCodec: Running {
     // MARK: Running
     public func startRunning() {
         lockQueue.async {
-            guard !self.isRunning.value else {
+            guard !self.isRunning.wrappedValue else {
                 return
             }
             if let audioConverter = self.audioConverter {
                 self.delegate?.audioCodec(self, didOutput: audioConverter.outputFormat)
                 audioConverter.reset()
             }
-            self.isRunning.mutate { $0 = true }
+            self.isRunning.wrappedValue = true
         }
     }
 
     public func stopRunning() {
         lockQueue.async {
-            guard self.isRunning.value else {
+            guard self.isRunning.wrappedValue else {
                 return
             }
-            self.isRunning.mutate { $0 = false }
+            self.isRunning.wrappedValue = false
         }
     }
 }

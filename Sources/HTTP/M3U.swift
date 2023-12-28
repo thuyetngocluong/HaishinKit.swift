@@ -18,15 +18,20 @@ extension M3U: CustomStringConvertible {
     var description: String {
         var lines: [String] = [
             "#EXTM3U",
-            "#EXT-X-VERSION:\(version)",
-            "#EXT-X-MEDIA-SEQUENCE:\(mediaSequence)",
-            "#EXT-X-TARGETDURATION:\(Int(targetDuration))"
+            "#EXT-X-PLAYLIST-TYPE:EVENT",
+            "#EXT-X-VERSION:3",
+            "#EXT-X-TARGETDURATION:4.2",
+            "#EXT-X-MEDIA-SEQUENCE:\(mediaSequence)"
         ]
         for info in mediaList {
+            guard info.duration < 6 else {
+                print("LNT QUA", info.duration)
+                continue
+            }
             lines.append("#EXTINF:\(info.duration),")
             lines.append(info.url.pathComponents.last!)
         }
-        return lines.joined(separator: "\r\n")
+        return lines.joined(separator: "\n")
     }
 }
 

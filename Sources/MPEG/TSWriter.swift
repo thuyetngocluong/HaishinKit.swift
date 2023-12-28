@@ -26,7 +26,7 @@ public class TSWriter: Running {
     public static let defaultVideoPID: UInt16 = 256
     public static let defaultAudioPID: UInt16 = 257
 
-    public static let defaultSegmentDuration: Double = 2
+    public static let defaultSegmentDuration: Double = 4
 
     /// The delegate instance.
     public weak var delegate: (any TSWriterDelegate)?
@@ -82,14 +82,14 @@ public class TSWriter: Running {
     }
 
     public func startRunning() {
-        guard isRunning.value else {
+        guard isRunning.wrappedValue else {
             return
         }
-        isRunning.mutate { $0 = true }
+        isRunning.wrappedValue = true
     }
 
     public func stopRunning() {
-        guard !isRunning.value else {
+        guard !isRunning.wrappedValue else {
             return
         }
         audioContinuityCounter = 0
@@ -103,15 +103,12 @@ public class TSWriter: Running {
         videoTimestamp = .invalid
         audioTimestamp = .invalid
         PCRTimestamp = .invalid
-        isRunning.mutate { $0 = false }
+        isRunning.wrappedValue = false
     }
 
     // swiftlint:disable:next function_parameter_count
     final func writeSampleBuffer(_ PID: UInt16, streamID: UInt8, bytes: UnsafePointer<UInt8>?, count: UInt32, presentationTimeStamp: CMTime, decodeTimeStamp: CMTime, randomAccessIndicator: Bool) {
-        guard canWriteFor else {
-            return
-        }
-
+       
         switch PID {
         case TSWriter.defaultAudioPID:
             guard audioTimestamp == .invalid else { break }
@@ -293,30 +290,31 @@ extension TSWriter: VideoCodecDelegate {
 
 class TSFileWriter: TSWriter {
     static let defaultSegmentCount: Int = 3
-    static let defaultSegmentMaxCount: Int = 12
+    static let defaultSegmentMaxCount: Int = 50
 
     var segmentMaxCount: Int = TSFileWriter.defaultSegmentMaxCount
-    private(set) var files: [M3UMediaInfo] = []
+    private var isFirstSegment = true
+    private(set) var files: Atomic<[M3UMediaInfo]> = .init([]) {
+        didSet {
+            print("FILE COUNT", files.value.count)
+            
+        }
+    }
+    private var cachedFiles: [M3UMediaInfo] = []
     private var currentFileHandle: FileHandle?
     private var currentFileURL: URL?
     private var sequence: Int = 0
+    
+    private var lock = NSLock()
 
     var playlist: String {
         var m3u8 = M3U()
-        m3u8.targetDuration = segmentDuration
-        if sequence <= TSFileWriter.defaultSegmentMaxCount {
-            m3u8.mediaSequence = 0
-            m3u8.mediaList = files
-            for mediaItem in m3u8.mediaList where mediaItem.duration > m3u8.targetDuration {
-                m3u8.targetDuration = mediaItem.duration + 1
-            }
-            return m3u8.description
-        }
-        let startIndex = max(0, files.count - TSFileWriter.defaultSegmentCount)
-        m3u8.mediaSequence = sequence - TSFileWriter.defaultSegmentMaxCount
-        m3u8.mediaList = Array(files[startIndex..<files.count])
-        for mediaItem in m3u8.mediaList where mediaItem.duration > m3u8.targetDuration {
-            m3u8.targetDuration = mediaItem.duration + 1
+        let droped = Array(files.value.prefix(4))
+        m3u8.mediaSequence = sequence
+        m3u8.mediaList = droped
+        if files.value.count >= 4 {
+            files.wrappedValue.removeFirst(1)
+            sequence += 1
         }
         return m3u8.description
     }
@@ -346,14 +344,10 @@ class TSFileWriter: TSWriter {
         let filename: String = Int(timestamp.seconds).description + ".ts"
         let url = URL(fileURLWithPath: temp + filename)
 
-        if let currentFileURL: URL = currentFileURL {
-            files.append(M3UMediaInfo(url: currentFileURL, duration: duration))
-            sequence += 1
-        }
 
         fileManager.createFile(atPath: url.path, contents: nil, attributes: nil)
-        if TSFileWriter.defaultSegmentMaxCount <= files.count {
-            let info: M3UMediaInfo = files.removeFirst()
+        if TSFileWriter.defaultSegmentMaxCount <= files.value.count {
+            let info: M3UMediaInfo = files.wrappedValue.removeFirst()
             do {
                 try fileManager.removeItem(at: info.url as URL)
             } catch {
@@ -374,6 +368,12 @@ class TSFileWriter: TSWriter {
         currentFileHandle = try? FileHandle(forWritingTo: url)
 
         writeProgram()
+        if let currentFileURL: URL = currentFileURL {
+            files.wrappedValue.append(M3UMediaInfo(url: currentFileURL, duration: duration))
+            if files.value.count >= 3 {
+                lock.unlock()
+            }
+        }
         rotatedTimestamp = timestamp
     }
 
@@ -388,7 +388,7 @@ class TSFileWriter: TSWriter {
     }
 
     override func stopRunning() {
-        guard !isRunning.value else {
+        guard !isRunning.wrappedValue else {
             return
         }
         currentFileURL = nil
@@ -398,18 +398,26 @@ class TSFileWriter: TSWriter {
     }
 
     func getFilePath(_ fileName: String) -> String? {
-        files.first { $0.url.absoluteString.contains(fileName) }?.url.path
+        files.value.first { $0.url.absoluteString.contains(fileName) }?.url.path
+    }
+    
+    func getDataByFileName(_ fileName: String) -> Data? {
+        let data = try? Data(contentsOf: URL(fileURLWithPath: URL(string: NSTemporaryDirectory() + fileName)!.path))
+        DispatchQueue.global().async {
+            try? FileManager.default.removeItem(at: URL(string: NSTemporaryDirectory() + fileName)!)
+        }
+        return data
     }
 
     private func removeFiles() {
         let fileManager = FileManager.default
-        for info in files {
+        for info in files.value {
             do {
                 try fileManager.removeItem(at: info.url as URL)
             } catch {
                 logger.warn(error)
             }
         }
-        files.removeAll()
+        files.wrappedValue.removeAll()
     }
 }
